@@ -1,5 +1,5 @@
 # encoding: utf-8
-require './test/helper'
+require 'test/helper'
 
 class Dummy
   # This is a dummy class
@@ -11,9 +11,17 @@ class AttachmentTest < Test::Unit::TestCase
     @model = @attachment.instance
     @model.id = 1234
     @model.avatar_file_name = "fake.jpg"
-    assert_equal "#{Rails.root}/public/fake_models/1234/fake", @attachment.path
+    assert_equal "#{RAILS_ROOT}/public/fake_models/1234/fake", @attachment.path
   end
 
+  should "return the path based on custom parameter" do
+    @attachment = attachment :url => "/:class/:custom_param", :tags => { :custom_param => lambda { |attachment, style_name| "sample" } }
+    @model = @attachment.instance
+    @model.avatar_file_name = "fake.jpg"
+    
+    assert_equal "#{RAILS_ROOT}/public/fake_models/sample", @attachment.path
+  end
+  
   context "Attachment default_options" do
     setup do
       rebuild_model
@@ -110,7 +118,9 @@ class AttachmentTest < Test::Unit::TestCase
     end
 
     should "return the proper path" do
+      temporary_rails_env(@rails_env) {
       assert_equal "#{@rails_env}/#{@id}.png", @dummy.avatar.path
+      }
     end
   end
 

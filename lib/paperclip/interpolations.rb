@@ -19,14 +19,15 @@ module Paperclip
     end
 
     # Returns a sorted list of all interpolations.
-    def self.all
-      self.instance_methods(false).sort
+    def self.all(attachment)
+      self.instance_methods(false).sort + attachment.tags.keys
     end
 
     # Perform the actual interpolation. Takes the pattern to interpolate
     # and the arguments to pass, which are the attachment and style name.
     def self.interpolate pattern, *args
-      all.reverse.inject( pattern.dup ) do |result, tag|
+      attachment, style_name = *args
+      all(attachment).reverse.inject( pattern.dup ) do |result, tag|
         result.gsub(/:#{tag}/) do |match|
           send( tag, *args )
         end
@@ -109,6 +110,17 @@ module Paperclip
     # Returns the style, or the default style if nil is supplied.
     def style attachment, style_name
       style_name || attachment.default_style
+    end
+    
+    # Looks up missing interpolations among the custom tags and returns if present
+    def method_missing(tag, attachment, style_name)
+      interpolation = attachment.tags[tag]
+
+      if interpolation.is_a?(Proc)
+        return interpolation.call(attachment, style_name)
+      else
+        return interpolation
+      end
     end
   end
 end
